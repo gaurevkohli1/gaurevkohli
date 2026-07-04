@@ -1,0 +1,39 @@
+name: Fetch generated media
+
+on:
+  workflow_dispatch:
+    inputs:
+      orbit_url:
+        description: URL of the hero orbit clip
+        required: true
+      builder_url:
+        description: URL of the builder clip
+        required: true
+      closer_url:
+        description: URL of the closer clip
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Download clips
+        run: |
+          mkdir -p public/media
+          curl -fsSL "${{ inputs.orbit_url }}" -o public/media/orbit.mp4
+          curl -fsSL "${{ inputs.builder_url }}" -o public/media/builder.mp4
+          curl -fsSL "${{ inputs.closer_url }}" -o public/media/closer.mp4
+          ls -la public/media
+      - name: Commit media
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/media
+          git commit -m "Add generated Seedance clips"
+          git push
