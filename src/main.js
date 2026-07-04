@@ -261,8 +261,53 @@ function buildFinale() {
     .to(groups[0], { yPercent: 0, opacity: 1, stagger: 0.02, duration: 0.4, ease: 'power3.out' }, 0)
     .to(groups[1], { yPercent: 0, opacity: 1, stagger: 0.02, duration: 0.4, ease: 'power3.out' }, 0.18)
     .to(groups[2], { yPercent: 0, opacity: 1, stagger: 0.02, duration: 0.4, ease: 'power3.out' }, 0.36)
-    .from('.finale__actions', { y: 40, opacity: 0, duration: 0.4, ease: 'power2.out' }, 0.55)
-    .from('.footer', { opacity: 0, duration: 0.4 }, 0.7);
+    .from('.contact__field', { y: 34, opacity: 0, stagger: 0.06, duration: 0.35, ease: 'power2.out' }, 0.5)
+    .from('.finale__actions', { y: 40, opacity: 0, duration: 0.4, ease: 'power2.out' }, 0.62)
+    .from('.footer', { opacity: 0, duration: 0.4 }, 0.75);
+}
+
+/* ============================================================
+   Contact form — hands the message off to WhatsApp or email
+   ============================================================ */
+function buildContactForm() {
+  const form = document.getElementById('contactForm');
+  if (!form) return;
+  const WHATSAPP = '919659533000';
+  const EMAIL = 'gaurevkohli1@gmail.com';
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const via = e.submitter?.dataset.send || 'whatsapp';
+    const name = form.name.value.trim();
+    const contact = form.contact.value.trim();
+    const message = form.message.value.trim();
+
+    let invalid = false;
+    [[form.name, name], [form.message, message]].forEach(([el, v]) => {
+      el.classList.toggle('is-invalid', !v);
+      if (!v && !invalid) { el.focus(); invalid = true; }
+    });
+    if (invalid) return;
+
+    const lines = [
+      `Hi Gaurev, I'm ${name}.`,
+      message,
+      contact ? `You can reach me back at: ${contact}` : '',
+    ].filter(Boolean);
+
+    if (via === 'whatsapp') {
+      const url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(lines.join('\n\n'))}`;
+      window.open(url, '_blank', 'noopener');
+    } else {
+      const subject = `Project inquiry — ${name}`;
+      const url = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\n\n'))}`;
+      window.location.href = url;
+    }
+  });
+
+  form.querySelectorAll('.contact__input').forEach((el) => {
+    el.addEventListener('input', () => el.classList.remove('is-invalid'));
+  });
 }
 
 /* Play scene videos only while on screen */
@@ -302,6 +347,7 @@ async function boot() {
   buildPillars();
   buildWork();
   buildFinale();
+  buildContactForm();
   manageVideos();
   ScrollTrigger.refresh();
 
