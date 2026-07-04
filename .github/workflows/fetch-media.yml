@@ -1,17 +1,9 @@
 name: Fetch generated media
 
 on:
-  workflow_dispatch:
-    inputs:
-      orbit_url:
-        description: URL of the hero orbit clip
-        required: true
-      builder_url:
-        description: URL of the builder clip
-        required: true
-      closer_url:
-        description: URL of the closer clip
-        required: true
+  push:
+    paths:
+      - media-urls.json
 
 permissions:
   contents: write
@@ -21,14 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
       - name: Download clips
         run: |
           mkdir -p public/media
-          curl -fsSL "${{ inputs.orbit_url }}" -o public/media/orbit.mp4
-          curl -fsSL "${{ inputs.builder_url }}" -o public/media/builder.mp4
-          curl -fsSL "${{ inputs.closer_url }}" -o public/media/closer.mp4
+          curl -fsSL "$(jq -r .orbit media-urls.json)" -o public/media/orbit.mp4
+          curl -fsSL "$(jq -r .builder media-urls.json)" -o public/media/builder.mp4
+          curl -fsSL "$(jq -r .closer media-urls.json)" -o public/media/closer.mp4
           ls -la public/media
       - name: Commit media
         run: |
