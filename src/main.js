@@ -88,12 +88,12 @@ async function makeFallbackFrames(n = 120, w = 1600, h = 900) {
     c.save();
     c.translate(w / 2, h * 0.52);
     c.rotate(t * Math.PI * 2);
-    c.strokeStyle = 'rgba(23,232,143,0.75)';
+    c.strokeStyle = 'rgba(209,254,23,0.75)';
     c.lineWidth = 3;
     c.beginPath();
     c.ellipse(0, 0, 300, 96, 0, 0.25, Math.PI * 1.65);
     c.stroke();
-    c.fillStyle = '#17e88f';
+    c.fillStyle = '#D1FE17';
     c.beginPath();
     c.arc(300 * Math.cos(0.25), 96 * Math.sin(0.25), 7, 0, Math.PI * 2);
     c.fill();
@@ -272,7 +272,7 @@ function buildFinale() {
 function buildContactForm() {
   const form = document.getElementById('contactForm');
   if (!form) return;
-  const WHATSAPP = '919659533000';
+  const WHATSAPP = '919659433000';
   const EMAIL = 'gaurevkohli1@gmail.com';
 
   form.addEventListener('submit', (e) => {
