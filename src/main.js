@@ -104,8 +104,12 @@ async function makeFallbackFrames(n = 120, w = 1600, h = 900) {
 }
 
 async function loadFrames(onProgress) {
+  // phones and low-memory devices get the lighter 960px frame set
+  const small = matchMedia('(max-width: 820px)').matches
+    || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+  const dir = small ? '/media/frames-sm' : '/media/frames';
   try {
-    const res = await fetch('/media/frames/manifest.json', { cache: 'no-cache' });
+    const res = await fetch(`${dir}/manifest.json`, { cache: 'no-cache' });
     if (!res.ok) throw new Error('no manifest');
     const m = await res.json(); // { count, pad, prefix, ext }
     frameCount = m.count;
@@ -117,7 +121,7 @@ async function loadFrames(onProgress) {
       while (next < frameCount) {
         const i = next++;
         const name = `${m.prefix}${String(i + 1).padStart(m.pad, '0')}.${m.ext}`;
-        const r = await fetch(`/media/frames/${name}`);
+        const r = await fetch(`${dir}/${name}`);
         const blob = await r.blob();
         frames[i] = await createImageBitmap(blob);
         loaded++;

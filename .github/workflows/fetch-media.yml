@@ -1,4 +1,4 @@
-name: Fetch generated media
+name: Fetch and process generated media
 
 on:
   push:
@@ -13,17 +13,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download clips
+      - name: Download 4K masters
         run: |
-          mkdir -p public/media
-          curl -fsSL "$(jq -r .orbit media-urls.json)" -o public/media/orbit.mp4
-          curl -fsSL "$(jq -r .builder media-urls.json)" -o public/media/builder.mp4
-          curl -fsSL "$(jq -r .closer media-urls.json)" -o public/media/closer.mp4
+          mkdir -p /tmp/masters
+          curl -fsSL "$(jq -r .orbit media-urls.json)" -o /tmp/masters/orbit.mp4
+          curl -fsSL "$(jq -r .builder media-urls.json)" -o /tmp/masters/builder.mp4
+          curl -fsSL "$(jq -r .closer media-urls.json)" -o /tmp/masters/closer.mp4
+          ffprobe -v error -select_streams v:0 -show_entries stream=width,height,nb_frames -of csv=p=0 /tmp/masters/orbit.mp4
+      - name: Extract orbit frame sequences
+        run: |
+          rm -rf public/media/frames public/media/frames-sm
+          mkdir -p public/media/frames public/media/frames-sm
+          # desktop: every 2nd frame, 1920 wide, high quality
+          ffmpeg -v error -i /tmp/masters/orbit.mp4 -vf "select='not(mod(n\,2))',scale=1920:-2" -vsync vfr -q:v 2 public/media/frames/orbit_%04d.jpg
+          # mobile: same frames at 960 wide
+          ffmpeg -v error -i /tmp/masters/orbit.mp4 -vf "select='not(mod(n\,2))',scale=960:-2" -vsync vfr -q:v 3 public/media/frames-sm/orbit_%04d.jpg
+          for d in frames frames-sm; do
+            n=$(ls public/media/$d/*.jpg | wc -l)
+            printf '{ "count": %s, "pad": 4, "prefix": "orbit_", "ext": "jpg" }\n' "$n" > public/media/$d/manifest.json
+          done
+          du -sh public/media/frames public/media/frames-sm
+      - name: Encode background videos from 4K masters
+        run: |
+          for c in builder closer; do
+            ffmpeg -v error -i /tmp/masters/$c.mp4 -vf scale=1920:-2 -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -movflags +faststart -an public/media/$c.mp4 -y
+            ffmpeg -v error -i /tmp/masters/$c.mp4 -vf scale=1920:-2 -c:v libvpx-vp9 -crf 26 -b:v 0 -deadline good -cpu-used 2 -row-mt 1 -an public/media/$c.webm -y
+          done
           ls -la public/media
       - name: Commit media
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public/media
-          git commit -m "Add generated Seedance clips"
+          git commit -m "Reprocess media from 4K upscaled masters"
           git push
